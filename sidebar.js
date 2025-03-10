@@ -1,5 +1,8 @@
 let isSolving = false;
 let geminiToken = '';
+let autoAnswerEnabled = false;
+let lastQuestionText = '';
+let checkInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const debugLog = document.getElementById('debugLog');
@@ -10,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageInput = document.getElementById('messageInput');
   const sendMessageBtn = document.getElementById('sendMessage');
   const chatMessages = document.getElementById('chatMessages');
+  const autoAnswerToggle = document.getElementById('autoAnswerToggle');
+  const autoAnswerStatus = document.getElementById('autoAnswerStatus');
 
   // Load saved token
   chrome.storage.local.get(['geminiToken'], (result) => {
@@ -381,6 +386,81 @@ document.addEventListener('DOMContentLoaded', () => {
         log(`Attempted to click answer button ${i}`);
       });
     });
+  }
+
+  // Load saved auto-answer state
+  chrome.storage.local.get(['autoAnswerEnabled'], (result) => {
+    autoAnswerEnabled = result.autoAnswerEnabled || false;
+    autoAnswerToggle.checked = autoAnswerEnabled;
+    updateAutoAnswerStatus();
+  });
+
+  autoAnswerToggle.addEventListener('change', () => {
+    autoAnswerEnabled = autoAnswerToggle.checked;
+    chrome.storage.local.set({ autoAnswerEnabled });
+    updateAutoAnswerStatus();
+    
+    if (autoAnswerEnabled) {
+      startAutoAnswerMode();
+    } else {
+      stopAutoAnswerMode();
+    }
+  });
+
+  function updateAutoAnswerStatus() {
+    autoAnswerStatus.textContent = autoAnswerEnabled ? '(Active)' : '(Idle)';
+    autoAnswerStatus.style.color = autoAnswerEnabled ? 'green' : 'gray';
+  }
+
+  function startAutoAnswerMode() {
+    log('Auto-answer mode activated');
+    if (checkInterval) clearInterval(checkInterval);
+    
+    async function checkForNewQuestion() {
+      if (!autoAnswerEnabled || isSolving) return;
+      
+      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+        if (!tabs[0]) return;
+        
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          function: () => {
+            const questionEl = document.querySelector('._questionText_1brbq_14');
+            return questionEl ? questionEl.innerText : null;
+          }
+        }, async (results) => {
+          if (!results || !results[0].result) return;
+          
+          const currentQuestion = results[0].result;
+          if (currentQuestion && currentQuestion !== lastQuestionText) {
+            lastQuestionText = currentQuestion;
+            log('New question detected!');
+            isSolving = true;
+            
+            // Use the existing answer function
+            const answerBtn = document.getElementById('answer');
+            answerBtn.click();
+            
+            // Reset solving state after a delay
+            setTimeout(() => {
+              isSolving = false;
+            }, 3000);
+          }
+        });
+      });
+    }
+    
+    // Check every 1 second
+    checkInterval = setInterval(checkForNewQuestion, 500);
+  }
+
+  function stopAutoAnswerMode() {
+    log('Auto-answer mode deactivated');
+    if (checkInterval) {
+      clearInterval(checkInterval);
+      checkInterval = null;
+    }
+    isSolving = false;
   }
 
   function log(message) {
