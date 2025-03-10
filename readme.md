@@ -7,6 +7,7 @@ This project is a Chrome extension that helps automate interactions with the Blo
 - Grab the current question and answers from the Blooket page and display them in the debug section.
 - Simulate keypresses for answers 1-4.
 - Click answer buttons directly on the Blooket page.
+- **LLM Settings**: Configure and save your Gemini API token for AI-powered answer suggestions.
 
 ## Installation
 
@@ -20,11 +21,16 @@ This project is a Chrome extension that helps automate interactions with the Blo
 1. Open the Blooket Solver extension from the Chrome extensions menu.
 2. Use the "Grab Question and Answers" button to fetch and display the current question and answers.
 3. Use the "Press 1", "Press 2", "Press 3", and "Press 4" buttons to simulate clicking the corresponding answer buttons on the Blooket page.
+4. Configure your Gemini API token in the "LLM Settings" section for AI-powered answer suggestions.
 
 ## Debug Tools
 
 - **Grab Question and Answers**: Fetches the current question and answers from the Blooket page and displays them in the debug section.
 - **Press 1-4**: Simulates clicking the corresponding answer buttons on the Blooket page.
+
+## LLM Settings
+
+- **Gemini API Token**: Enter and save your Gemini API token to enable AI-powered answer suggestions.
 
 ## Contributing
 
