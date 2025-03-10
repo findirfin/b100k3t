@@ -99,8 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  const testKeypressBtn = document.getElementById('testKeypress');
-
   document.getElementById('grabQuestion').addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.scripting.executeScript({
@@ -114,16 +112,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (results && results[0].result) {
           const { question, answers } = results[0].result;
           questionOutput.textContent = `Question: ${question}`;
-          answersOutput.innerHTML = answers.map((answer, index) => `Answer ${index + 1}: ${answer}`).join('<br>');
+          answersOutput.innerHTML = '';
+          
+          // Display answers and dynamically show/hide answer buttons
+          answers.forEach((answer, index) => {
+            answersOutput.innerHTML += `Answer ${index + 1}: ${answer}<br>`;
+            
+            // Show only the buttons for available answers
+            const buttonElement = document.getElementById(`press${index + 1}`);
+            if (buttonElement) {
+              buttonElement.style.display = index < answers.length ? 'inline-block' : 'none';
+            }
+          });
+          
+          // Hide any remaining buttons that don't have corresponding answers
+          for (let i = answers.length + 1; i <= 4; i++) {
+            const buttonElement = document.getElementById(`press${i}`);
+            if (buttonElement) {
+              buttonElement.style.display = 'none';
+            }
+          }
         } else {
           questionOutput.textContent = 'Could not find question or answers';
           answersOutput.innerHTML = '';
+          
+          // Hide all buttons if no answers were found
+          for (let i = 1; i <= 4; i++) {
+            const buttonElement = document.getElementById(`press${i}`);
+            if (buttonElement) {
+              buttonElement.style.display = 'none';
+            }
+          }
         }
       });
     });
   });
 
-  // Modify the individual button click handlers
+  // Setup button click handlers for all possible buttons (1-4)
   for (let i = 1; i <= 4; i++) {
     document.getElementById(`press${i}`).addEventListener('click', () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -131,13 +156,18 @@ document.addEventListener('DOMContentLoaded', () => {
           target: { tabId: tabs[0].id },
           function: (answerIndex) => {
             function findAnswerButtons() {
+              const answerElements = document.querySelectorAll('._answersHolder_1brbq_62 > div');
+              if (!answerElements || answerElements.length === 0) {
+                return null;
+              }
+              
               const answerButtons = [];
-              for (let i = 0; i < 4; i++) {
-                const button = document.getElementById(`answer${i}`);
-                if (button) {
-                  const rect = button.getBoundingClientRect();
+              for (let i = 0; i < answerElements.length; i++) {
+                const element = answerElements[i];
+                if (element) {
+                  const rect = element.getBoundingClientRect();
                   answerButtons.push({
-                    element: button,
+                    element: element,
                     index: i + 1,
                     x: rect.left + (rect.width / 2),
                     y: rect.top + (rect.height / 2)
@@ -145,10 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
               }
 
-              if (answerButtons.length === 4) {
-                return answerButtons;
-              }
-              return null;
+              return answerButtons.length > 0 ? answerButtons : null;
             }
 
             function simulateClick(x, y) {
@@ -168,17 +195,20 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
 
-            function clickAnswer(answerIndex) { // answerIndex should be 1-4
+            function clickAnswer(answerIndex) { // answerIndex should be 1-based
               const buttons = findAnswerButtons();
               if (!buttons) {
                 console.log('Could not find answer buttons');
                 return;
               }
 
-              const button = buttons[answerIndex - 1];
-              if (button) {
+              // Check if the requested answer index exists
+              if (answerIndex <= buttons.length) {
+                const button = buttons[answerIndex - 1];
                 simulateClick(button.x, button.y);
                 console.log(`Clicked answer ${answerIndex} at coordinates (${button.x}, ${button.y})`);
+              } else {
+                console.log(`Answer ${answerIndex} does not exist (only ${buttons.length} answers available)`);
               }
             }
 
@@ -186,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           args: [i]
         });
-        log(`Clicked answer button ${i}`);
+        log(`Attempted to click answer button ${i}`);
       });
     });
   }
@@ -197,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Global helper functions
 function simulateClick(x, y) {
   const clickEvent = new MouseEvent('click', {
     bubbles: true,
@@ -214,26 +245,19 @@ function simulateClick(x, y) {
   }
 }
 
-function getElementCoordinates(selector) {
-  const element = document.querySelector(selector);
-  if (element) {
-    const rect = element.getBoundingClientRect();
-    return {
-      x: rect.left + (rect.width / 2),
-      y: rect.top + (rect.height / 2)
-    };
-  }
-  return null;
-}
-
 function findAnswerButtons() {
+  const answerElements = document.querySelectorAll('._answersHolder_1brbq_62 > div');
+  if (!answerElements || answerElements.length === 0) {
+    return null;
+  }
+  
   const answerButtons = [];
-  for (let i = 0; i < 4; i++) {
-    const button = document.getElementById(`answer${i}`);
-    if (button) {
-      const rect = button.getBoundingClientRect();
+  for (let i = 0; i < answerElements.length; i++) {
+    const element = answerElements[i];
+    if (element) {
+      const rect = element.getBoundingClientRect();
       answerButtons.push({
-        element: button,
+        element: element,
         index: i + 1,
         x: rect.left + (rect.width / 2),
         y: rect.top + (rect.height / 2)
@@ -241,22 +265,22 @@ function findAnswerButtons() {
     }
   }
 
-  if (answerButtons.length === 4) {
-    return answerButtons;
-  }
-  return null;
+  return answerButtons.length > 0 ? answerButtons : null;
 }
 
-function clickAnswer(answerIndex) { // answerIndex should be 1-4
+function clickAnswer(answerIndex) { // answerIndex should be 1-based
   const buttons = findAnswerButtons();
   if (!buttons) {
     console.log('Could not find answer buttons');
     return;
   }
 
-  const button = buttons[answerIndex - 1];
-  if (button) {
+  // Check if the requested answer index exists
+  if (answerIndex <= buttons.length) {
+    const button = buttons[answerIndex - 1];
     simulateClick(button.x, button.y);
     console.log(`Clicked answer ${answerIndex} at coordinates (${button.x}, ${button.y})`);
+  } else {
+    console.log(`Answer ${answerIndex} does not exist (only ${buttons.length} answers available)`);
   }
 }
