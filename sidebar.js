@@ -1,10 +1,105 @@
 let isSolving = false;
+let pplxToken = '';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const testKeypressBtn = document.getElementById('testKeypress');
   const debugLog = document.getElementById('debugLog');
   const questionOutput = document.getElementById('questionOutput');
   const answersOutput = document.getElementById('answersOutput');
+  const tokenInput = document.getElementById('pplxToken');
+  const saveTokenBtn = document.getElementById('saveToken');
+  const messageInput = document.getElementById('messageInput');
+  const sendMessageBtn = document.getElementById('sendMessage');
+  const chatMessages = document.getElementById('chatMessages');
+
+  // Load saved token
+  chrome.storage.local.get(['pplxToken'], (result) => {
+    if (result.pplxToken) {
+      pplxToken = result.pplxToken;
+      tokenInput.value = pplxToken;
+    }
+  });
+
+  // Save token
+  saveTokenBtn.addEventListener('click', () => {
+    pplxToken = tokenInput.value;
+    chrome.storage.local.set({ pplxToken });
+    log('API token saved');
+  });
+
+  // Send message
+  sendMessageBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  async function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    if (!pplxToken) {
+      addMessageToChat('bot', 'Error: Please enter and save your API token first');
+      return;
+    }
+
+    // Add user message to chat
+    addMessageToChat('user', message);
+    messageInput.value = '';
+
+    const requestBody = {
+      model: "sonar",
+      messages: [
+        {
+          role: "system",
+          content: "Be precise and concise."
+        },
+        {
+          role: "user",
+          content: message
+        }
+      ]
+    };
+
+    try {
+      console.log('Sending request:', requestBody); // Debug log
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${pplxToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data); // Debug log
+
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        addMessageToChat('bot', data.choices[0].message.content);
+      } else {
+        throw new Error('Invalid response structure from API');
+      }
+    } catch (error) {
+      console.error('Full error:', error);
+      addMessageToChat('bot', `Error: ${error.message}`);
+    }
+  }
+
+  function addMessageToChat(role, content) {
+    const div = document.createElement('div');
+    div.className = `message ${role}-message`;
+    div.textContent = content;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  const testKeypressBtn = document.getElementById('testKeypress');
 
   document.getElementById('grabQuestion').addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
