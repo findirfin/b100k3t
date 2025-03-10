@@ -104,7 +104,46 @@ document.addEventListener('DOMContentLoaded', () => {
               log(`AI suggests answer: ${responseText}`);
               
               // Extract the number from the response
-              const answerNumber = parseInt(responseText.trim().match(/\d+/)?.[0]);
+              let answerNumber = parseInt(responseText.trim().match(/\d+/)?.[0]);
+              
+              // If we couldn't determine a valid answer number, try one more time
+              if (!answerNumber || answerNumber < 1 || answerNumber > answers.length) {
+                log(`Could not determine valid answer number from first response. Trying again...`);
+                
+                // Try again with a more explicit prompt
+                const retryRequestBody = {
+                  contents: [
+                    {
+                      parts: [
+                        { text: message + "\n\nPlease respond with ONLY a single number between 1 and " + answers.length }
+                      ]
+                    }
+                  ],
+                  system_instruction: {
+                    parts: [
+                      { text: "You must output ONLY a single digit number representing the correct answer (e.g., '2'). No explanations or other text. Just the number." }
+                    ]
+                  },
+                  tools: [ { google_search: {} } ],
+                };
+                
+                const retryResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiToken}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(retryRequestBody)
+                });
+                
+                if (retryResponse.ok) {
+                  const retryData = await retryResponse.json();
+                  if (retryData.candidates && retryData.candidates[0] && retryData.candidates[0].content && retryData.candidates[0].content.parts) {
+                    const retryResponseText = retryData.candidates[0].content.parts[0].text;
+                    log(`Second attempt AI response: ${retryResponseText}`);
+                    answerNumber = parseInt(retryResponseText.trim().match(/\d+/)?.[0]);
+                  }
+                }
+              }
               
               if (answerNumber && answerNumber >= 1 && answerNumber <= answers.length) {
                 log(`Clicking answer ${answerNumber}...`);
@@ -224,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   checkResult(); // Start checking
                 }
               } else {
-                log(`Error: Could not determine valid answer number from AI response: "${responseText}"`);
+                log(`Error: Could not determine valid answer number from AI responses after two attempts`);
               }
             } else {
               throw new Error('Invalid response structure from API');
