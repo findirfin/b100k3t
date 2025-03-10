@@ -261,6 +261,52 @@ document.addEventListener('DOMContentLoaded', () => {
                   };
 
                   checkResult(); // Start checking
+
+                  // Check for "Click Anywhere to Go Next" text
+                  const checkForNextText = () => {
+                    chrome.scripting.executeScript({
+                      target: { tabId: tabs[0].id },
+                      function: () => {
+                        const nextTextEl = document.querySelector('._nextText_4nfdm_76');
+                        return nextTextEl ? nextTextEl.innerText : null;
+                      }
+                    }, (nextTextResults) => {
+                      if (nextTextResults && nextTextResults[0].result) {
+                        const nextText = nextTextResults[0].result;
+                        if (nextText && nextText.toLowerCase().includes('click anywhere to go next')) {
+                          log('Detected "Click Anywhere to Go Next" text');
+                          chrome.scripting.executeScript({
+                            target: { tabId: tabs[0].id },
+                            function: () => {
+                              const x = Math.floor(Math.random() * window.innerWidth);
+                              const y = Math.floor(Math.random() * window.innerHeight);
+                              
+                              const clickEvent = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window,
+                                clientX: x,
+                                clientY: y
+                              });
+                              
+                              document.elementFromPoint(x, y)?.dispatchEvent(clickEvent);
+                              return `Clicked at coordinates (${x}, ${y})`;
+                            }
+                          }, (results) => {
+                            if (results && results[0].result) {
+                              log(results[0].result);
+                            }
+                          });
+                        } else {
+                          setTimeout(checkForNextText, 500);
+                        }
+                      } else {
+                        setTimeout(checkForNextText, 500);
+                      }
+                    });
+                  };
+
+                  checkForNextText(); // Start checking for "Click Anywhere to Go Next" text
                 }
               } else {
                 log(`Error: Could not determine valid answer number from AI responses after two attempts`);
