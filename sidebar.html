@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Blooket Solver</title>
+  <title>b100k3t</title>
   <style>
     body {
       width: 100%;
@@ -56,41 +56,65 @@
     #messageInput {
       flex-grow: 1;
     }
+    .collapsible {
+      background-color: #f1f1f1;
+      color: #444;
+      cursor: pointer;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+      font-size: 15px;
+    }
+    .active, .collapsible:hover {
+      background-color: #ccc;
+    }
+    .content {
+      padding: 0 18px;
+      display: none;
+      overflow: hidden;
+      background-color: #f9f9f9;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Blooket Solver</h2>
+    <h2>b100k3t</h2>
     
-
-    <h3>Debug Tools</h3>
     <div>
-      <button id="answer">Answer</button>
+      <button id="answer">Cook</button>
       <div style="margin-top: 8px;">
         <label style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" id="autoAnswerToggle">
-          Auto Answer Mode
+          Chef Mode
           <span id="autoAnswerStatus" style="color: gray;">(Idle)</span>
         </label>
       </div>
     </div>
-    <div>
-      <button id="grabQuestion">Grab Question and Answers</button>
-      <div id="questionOutput"></div>
-      <div id="answersOutput"></div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-      <button id="press1">Press 1</button>
-      <button id="press2">Press 2</button>
-      <button id="press3">Press 3</button>
-      <button id="press4">Press 4</button>
-    </div>
     <textarea id="debugLog" readonly></textarea>
 
-    <h3>LLM Settings</h3>
-    <div>
-      <input type="password" id="geminiToken" placeholder="Enter Gemini API Token">
-      <button id="saveToken">Save Token</button>
+    <button type="button" class="collapsible">Debug Tools</button>
+    <div class="content">
+      <div>
+        <button id="grabQuestion">Grab Question and Answers</button>
+        <div id="questionOutput"></div>
+        <div id="answersOutput"></div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="press1">Press 1</button>
+        <button id="press2">Press 2</button>
+        <button id="press3">Press 3</button>
+        <button id="press4">Press 4</button>
+      </div>
+    </div>
+
+    <button type="button" class="collapsible">LLM Settings</button>
+    <div class="content">
+      <div>
+        <input type="password" id="geminiToken" placeholder="Enter Gemini API Token">
+        <button id="saveToken">Save Token</button>
+      </div>
     </div>
   </div>
   <script src="sidebar.js"></script>
