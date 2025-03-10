@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const elementSelector = document.getElementById('elementSelector');
   const findElementBtn = document.getElementById('findElement');
 
+  const questionOutput = document.getElementById('questionOutput');
+  const answersOutput = document.getElementById('answersOutput');
+
   // Load saved API key
   chrome.storage.sync.get(['apiKey'], (result) => {
     if (result.apiKey) {
@@ -111,6 +114,28 @@ document.addEventListener('DOMContentLoaded', () => {
           log(`Found element at (${coords.x}, ${coords.y})`);
         } else {
           log('Element not found');
+        }
+      });
+    });
+  });
+
+  document.getElementById('grabQuestion').addEventListener('click', () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: () => {
+          const question = document.querySelector('._questionText_1brbq_14').innerText;
+          const answers = Array.from(document.querySelectorAll('._answersHolder_1brbq_62 > div')).map(div => div.innerText);
+          return { question, answers };
+        }
+      }, (results) => {
+        if (results && results[0].result) {
+          const { question, answers } = results[0].result;
+          questionOutput.textContent = `Question: ${question}`;
+          answersOutput.innerHTML = answers.map((answer, index) => `Answer ${index + 1}: ${answer}`).join('<br>');
+        } else {
+          questionOutput.textContent = 'Could not find question or answers';
+          answersOutput.innerHTML = '';
         }
       });
     });
