@@ -2,27 +2,23 @@
   "manifest_version": 3,
   "name": "Blooket Solver",
   "version": "1.0",
-  "description": "AI-powered Blooket solver",
   "permissions": [
-    "activeTab",
+    "storage",
     "scripting",
-    "storage"
+    "activeTab",
+    "sidePanel"
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon128.jpg",
-      "48": "icon128.jpg",
-      "128": "icon128.jpg"
-    }
+    "default_title": "Open Solver Sidebar"
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*.blooket.com/*"],
-      "js": ["content.js"]
-    }
-  ],
   "background": {
     "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["*://*.blooket.com/*"],
+    "js": ["content.js"]
+  }],
+  "side_panel": {
+    "default_path": "sidebar.html"
   }
 }

@@ -1,3 +1,11 @@
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.url.includes("blooket.com")) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
 let isSolving = false;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
