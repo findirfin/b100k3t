@@ -100,6 +100,167 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  // Auto-answer functionality
+  document.getElementById('answer').addEventListener('click', async () => {
+    if (!geminiToken) {
+      log('Error: Please enter and save your API token first');
+      return;
+    }
+
+    log('Starting auto-answer process...');
+    
+    // First grab the question and answers
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: () => {
+          const question = document.querySelector('._questionText_1brbq_14').innerText;
+          const answers = Array.from(document.querySelectorAll('._answersHolder_1brbq_62 > div')).map(div => div.innerText);
+          return { question, answers };
+        }
+      }, async (results) => {
+        if (results && results[0].result) {
+          const { question, answers } = results[0].result;
+          
+          // Update UI
+          questionOutput.textContent = `Question: ${question}`;
+          answersOutput.innerHTML = '';
+          answers.forEach((answer, index) => {
+            answersOutput.innerHTML += `Answer ${index + 1}: ${answer}<br>`;
+          });
+          
+          log(`Found question: "${question.substring(0, 30)}..."`);
+          log(`Found ${answers.length} possible answers`);
+          
+          // Prepare message for AI
+          const message = `Question: ${question}\n\n` + 
+                          answers.map((answer, i) => `${i+1}. ${answer}`).join('\n');
+          
+          try {
+            // Send to AI
+            log('Sending to AI for analysis...');
+            
+            const requestBody = {
+              contents: [
+                {
+                  parts: [
+                    { text: message }
+                  ]
+                }
+              ],
+              system_instruction: {
+                parts: [
+                  { text: "Given a multiple-choice question, output only the number of the correct answer (e.g., 2) with no additional text; if you are unsure, use Google Search to verify your answer. Here is the question:" }
+                ]
+              },
+              tools: [ { google_search: {} } ],
+            };
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiToken}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`API error (${response.status}): ${errorText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+              const responseText = data.candidates[0].content.parts[0].text;
+              log(`AI suggests answer: ${responseText}`);
+              
+              // Extract the number from the response
+              const answerNumber = parseInt(responseText.trim().match(/\d+/)?.[0]);
+              
+              if (answerNumber && answerNumber >= 1 && answerNumber <= answers.length) {
+                log(`Clicking answer ${answerNumber}...`);
+                
+                // Click the answer
+                chrome.scripting.executeScript({
+                  target: { tabId: tabs[0].id },
+                  function: (answerIndex) => {
+                    function findAnswerButtons() {
+                      const answerElements = document.querySelectorAll('._answersHolder_1brbq_62 > div');
+                      if (!answerElements || answerElements.length === 0) {
+                        return null;
+                      }
+                      
+                      const answerButtons = [];
+                      for (let i = 0; i < answerElements.length; i++) {
+                        const element = answerElements[i];
+                        if (element) {
+                          const rect = element.getBoundingClientRect();
+                          answerButtons.push({
+                            element: element,
+                            index: i + 1,
+                            x: rect.left + (rect.width / 2),
+                            y: rect.top + (rect.height / 2)
+                          });
+                        }
+                      }
+                      return answerButtons.length > 0 ? answerButtons : null;
+                    }
+                    
+                    function simulateClick(x, y) {
+                      const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: x,
+                        clientY: y,
+                        screenX: x,
+                        screenY: y
+                      });
+                      
+                      const element = document.elementFromPoint(x, y);
+                      if (element) {
+                        element.dispatchEvent(clickEvent);
+                      }
+                    }
+                    
+                    function clickAnswer(answerIndex) {
+                      const buttons = findAnswerButtons();
+                      if (!buttons) {
+                        console.log('Could not find answer buttons');
+                        return;
+                      }
+                      
+                      if (answerIndex <= buttons.length) {
+                        const button = buttons[answerIndex - 1];
+                        simulateClick(button.x, button.y);
+                        console.log(`Clicked answer ${answerIndex} at coordinates (${button.x}, ${button.y})`);
+                      } else {
+                        console.log(`Answer ${answerIndex} does not exist (only ${buttons.length} answers available)`);
+                      }
+                    }
+                    
+                    clickAnswer(answerIndex);
+                  },
+                  args: [answerNumber]
+                });
+              } else {
+                log(`Error: Could not determine valid answer number from AI response: "${responseText}"`);
+              }
+            } else {
+              throw new Error('Invalid response structure from API');
+            }
+          } catch (error) {
+            log(`Error: ${error.message}`);
+            console.error('Full error:', error);
+          }
+        } else {
+          log('Error: Could not find question or answers on the page');
+        }
+      });
+    });
+  });
+
   document.getElementById('grabQuestion').addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.scripting.executeScript({
