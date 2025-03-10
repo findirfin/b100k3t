@@ -102,59 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function testKeypress() {
-  [1, 2, 3, 4].forEach(num => {
-    setTimeout(() => {
-      simulateKeyPress(num.toString());
-    }, num * 1000);
-  });
-}
-
-function simulateKeyPress(key) {
-  const target = document.activeElement || document.body;
-  const keyCode = 48 + parseInt(key);
-  const eventInitDict = {
-    key: key,
-    code: `Digit${key}`,
-    location: KeyboardEvent.DOM_KEY_LOCATION_STANDARD,
-    keyCode: keyCode,
-    which: keyCode,
-    charCode: keyCode,
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-    isTrusted: false,
-    view: window,
-    shiftKey: false,
-    ctrlKey: false,
-    altKey: false,
-    metaKey: false
-  };
-
-  const events = [
-    new KeyboardEvent('keydown', eventInitDict),
-    new KeyboardEvent('keypress', eventInitDict),
-    new InputEvent('beforeinput', {
-      inputType: 'insertText',
-      data: key,
-      bubbles: true,
-      cancelable: true
-    }),
-    new InputEvent('input', {
-      inputType: 'insertText',
-      data: key,
-      bubbles: true,
-      cancelable: true
-    }),
-    new KeyboardEvent('keyup', eventInitDict)
-  ];
-
-  events.forEach(event => {
-    target.dispatchEvent(event);
-    document.dispatchEvent(event);
-  });
-}
-
 function simulateClick(x, y) {
   const clickEvent = new MouseEvent('click', {
     bubbles: true,
