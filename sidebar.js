@@ -1,6 +1,6 @@
 let isSolving = false;
 let geminiToken = '';
-let autoAnswerEnabled = false;
+let autoAnswerEnabled = false;  // Explicitly set default to false
 let lastQuestionText = '';
 let checkInterval = null;
 
@@ -275,28 +275,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         const nextText = nextTextResults[0].result;
                         if (nextText && nextText.toLowerCase().includes('click anywhere to go next')) {
                           log('Detected "Click Anywhere to Go Next" text');
-                          chrome.scripting.executeScript({
-                            target: { tabId: tabs[0].id },
-                            function: () => {
-                              const x = Math.floor(Math.random() * window.innerWidth);
-                              const y = Math.floor(Math.random() * window.innerHeight);
-                              
-                              const clickEvent = new MouseEvent('click', {
-                                bubbles: true,
-                                cancelable: true,
-                                view: window,
-                                clientX: x,
-                                clientY: y
-                              });
-                              
-                              document.elementFromPoint(x, y)?.dispatchEvent(clickEvent);
-                              return `Clicked at coordinates (${x}, ${y})`;
-                            }
-                          }, (results) => {
-                            if (results && results[0].result) {
-                              log(results[0].result);
-                            }
-                          });
+                          setTimeout(() => {
+                            chrome.scripting.executeScript({
+                              target: { tabId: tabs[0].id },
+                              function: () => {
+                                const x = Math.floor(Math.random() * window.innerWidth);
+                                const y = Math.floor(Math.random() * window.innerHeight);
+                                
+                                const clickEvent = new MouseEvent('click', {
+                                  bubbles: true,
+                                  cancelable: true,
+                                  view: window,
+                                  clientX: x,
+                                  clientY: y
+                                });
+                                
+                                document.elementFromPoint(x, y)?.dispatchEvent(clickEvent);
+                                return `Clicked at coordinates (${x}, ${y})`;
+                              }
+                            }, (results) => {
+                              if (results && results[0].result) {
+                                log(results[0].result);
+                              }
+                            });
+                          }, 100); // 0.1 second delay
                         } else {
                           setTimeout(checkForNextText, 500);
                         }
@@ -480,10 +482,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Load saved auto-answer state
+  // Load saved auto-answer state (modified to default to false)
   chrome.storage.local.get(['autoAnswerEnabled'], (result) => {
-    autoAnswerEnabled = result.autoAnswerEnabled || false;
-    autoAnswerToggle.checked = autoAnswerEnabled;
+    autoAnswerEnabled = false; // Force default to false when extension opens
+    autoAnswerToggle.checked = false; // Ensure toggle starts unchecked
+    chrome.storage.local.set({ autoAnswerEnabled: false }); // Save the off state
     updateAutoAnswerStatus();
   });
 
