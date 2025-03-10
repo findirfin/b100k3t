@@ -10,9 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const answersOutput = document.getElementById('answersOutput');
   const tokenInput = document.getElementById('geminiToken');
   const saveTokenBtn = document.getElementById('saveToken');
-  const messageInput = document.getElementById('messageInput');
-  const sendMessageBtn = document.getElementById('sendMessage');
-  const chatMessages = document.getElementById('chatMessages');
   const autoAnswerToggle = document.getElementById('autoAnswerToggle');
   const autoAnswerStatus = document.getElementById('autoAnswerStatus');
 
@@ -30,80 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ geminiToken });
     log('API token saved');
   });
-
-  // Send message
-  sendMessageBtn.addEventListener('click', sendMessage);
-  messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-  });
-
-  async function sendMessage() {
-    const message = messageInput.value.trim();
-    if (!message) return;
-
-    if (!geminiToken) {
-      addMessageToChat('bot', 'Error: Please enter and save your API token first');
-      return;
-    }
-
-    // Add user message to chat
-    addMessageToChat('user', message);
-    messageInput.value = '';
-
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            { text: message }
-          ]
-        }
-      ],
-      system_instruction: {
-        parts: [
-          { text: "Given a multiple-choice question, analyze each option carefully and select the correct answer. After your analysis, provide ONLY the number of the correct answer (e.g., '2') with no additional text or explanation. If you are uncertain about the answer, use google search. Here is the question:" }
-        ]
-      },
-      tools: [ { google_search: {} } ],
-    };
-    
-    try {
-      console.log('Sending request:', requestBody); // Debug log
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiToken}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error (${response.status}): ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response:', data); // Debug log
-
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        const responseText = data.candidates[0].content.parts[0].text;
-        addMessageToChat('bot', responseText);
-      } else {
-        throw new Error('Invalid response structure from API');
-      }
-    } catch (error) {
-      console.error('Full error:', error);
-      addMessageToChat('bot', `Error: ${error.message}`);
-    }
-  }
-
-  function addMessageToChat(role, content) {
-    const div = document.createElement('div');
-    div.className = `message ${role}-message`;
-    div.textContent = content;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
 
   // Auto-answer functionality
   document.getElementById('answer').addEventListener('click', async () => {

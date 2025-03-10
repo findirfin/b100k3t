@@ -62,18 +62,6 @@
   <div class="container">
     <h2>Blooket Solver</h2>
     
-    <div>
-      <h3>Gemini Chat</h3>
-      <input type="password" id="geminiToken" placeholder="Enter Gemini API Token">
-      <button id="saveToken">Save Token</button>
-      <div class="chat-container">
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input">
-          <input type="text" id="messageInput" placeholder="Type your message...">
-          <button id="sendMessage">Send</button>
-        </div>
-      </div>
-    </div>
 
     <h3>Debug Tools</h3>
     <div>
@@ -98,6 +86,12 @@
       <button id="press4">Press 4</button>
     </div>
     <textarea id="debugLog" readonly></textarea>
+
+    <h3>LLM Settings</h3>
+    <div>
+      <input type="password" id="geminiToken" placeholder="Enter Gemini API Token">
+      <button id="saveToken">Save Token</button>
+    </div>
   </div>
   <script src="sidebar.js"></script>
 </body>
