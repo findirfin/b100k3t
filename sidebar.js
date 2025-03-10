@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ],
       system_instruction: {
         parts: [
-          { text: "Given a multiple-choice question, output only the number of the correct answer (e.g., 2) with no additional text; if you are unsure, use Google Search to verify your answer. Here is the question:" }
+          { text: "Given a multiple-choice question, analyze each option carefully and select the correct answer. After your analysis, provide ONLY the number of the correct answer (e.g., '2') with no additional text or explanation. If you are uncertain about the answer, use google search. Here is the question:" }
         ]
       },
       tools: [ { google_search: {} } ],
