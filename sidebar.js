@@ -172,6 +172,40 @@ document.addEventListener('DOMContentLoaded', () => {
                   },
                   args: [answerNumber]
                 });
+
+                // Check result after clicking the answer
+                if (autoAnswerEnabled) {
+                  setTimeout(() => {
+                    log('Checking result after delay...');
+                    chrome.scripting.executeScript({
+                      target: { tabId: tabs[0].id },
+                      function: () => {
+                        const result = document.querySelector('._header_190yt_1')?.innerText;
+                        return result;
+                      }
+                    }, (resultResults) => {
+                      const resultOutput = document.getElementById('resultOutput');
+                      if (resultResults && resultResults[0].result) {
+                        const result = resultResults[0].result;
+                        log(`Result found: ${result}`);
+                        if (result.toLowerCase() === 'correct') {  // Check for exact match
+                          resultOutput.textContent = 'Last Question: Correct';
+                          resultOutput.style.color = 'green';
+                        } else if (result.toLowerCase() === 'incorrect') {  // Check for exact match
+                          resultOutput.textContent = 'Last Question: Incorrect';
+                          resultOutput.style.color = 'red';
+                        } else {
+                          resultOutput.textContent = 'Last Question: Unknown';
+                          resultOutput.style.color = 'gray';
+                        }
+                      } else {
+                        log('No result found');
+                        resultOutput.textContent = 'Last Question: No result found';
+                        resultOutput.style.color = 'gray';
+                      }
+                    });
+                  }, 4000); // Adjust the delay as needed
+                }
               } else {
                 log(`Error: Could not determine valid answer number from AI response: "${responseText}"`);
               }
@@ -222,7 +256,40 @@ document.addEventListener('DOMContentLoaded', () => {
               buttonElement.style.display = 'none';
             }
           }
+
+          // Add a delay before checking the result
+          setTimeout(() => {
+            log('Checking result after delay...');
+            chrome.scripting.executeScript({
+              target: { tabId: tabs[0].id },
+              function: () => {
+                const result = document.querySelector('._header_190yt_1')?.innerText;
+                return result;
+              }
+            }, (resultResults) => {
+              const resultOutput = document.getElementById('resultOutput');
+              if (resultResults && resultResults[0].result) {
+                const result = resultResults[0].result;
+                log(`Result found: ${result}`);
+                if (result.toLowerCase() === 'correct!') {  // Check for exact match
+                  resultOutput.textContent = 'Last Question: Correct';
+                  resultOutput.style.color = 'green';
+                } else if (result.toLowerCase() === 'incorrect!') {  // Check for exact match
+                  resultOutput.textContent = 'Last Question: Incorrect';
+                  resultOutput.style.color = 'red';
+                } else {
+                  resultOutput.textContent = 'Last Question: Unknown';
+                  resultOutput.style.color = 'gray';
+                }
+              } else {
+                log('No result found');
+                resultOutput.textContent = 'Last Question: No result found';
+                resultOutput.style.color = 'gray';
+              }
+            });
+          }, 5000); // Adjust the delay as needed
         } else {
+          log('Could not find question or answers');
           questionOutput.textContent = 'Could not find question or answers';
           answersOutput.innerHTML = '';
           
