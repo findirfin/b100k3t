@@ -175,8 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Check result after clicking the answer
                 if (autoAnswerEnabled) {
-                  setTimeout(() => {
-                    log('Checking result after delay...');
+                  let attempts = 0;
+                  const maxAttempts = 20; // Maximum number of attempts (10 seconds total)
+                  
+                  const checkResult = () => {
                     chrome.scripting.executeScript({
                       target: { tabId: tabs[0].id },
                       function: () => {
@@ -188,23 +190,38 @@ document.addEventListener('DOMContentLoaded', () => {
                       if (resultResults && resultResults[0].result) {
                         const result = resultResults[0].result;
                         log(`Result found: ${result}`);
-                        if (result.toLowerCase() === 'correct') {  // Check for exact match
+                        if (result.toLowerCase() === 'correct') {
                           resultOutput.textContent = 'Last Question: Correct';
                           resultOutput.style.color = 'green';
-                        } else if (result.toLowerCase() === 'incorrect') {  // Check for exact match
+                        } else if (result.toLowerCase() === 'incorrect') {
                           resultOutput.textContent = 'Last Question: Incorrect';
                           resultOutput.style.color = 'red';
                         } else {
-                          resultOutput.textContent = 'Last Question: Unknown';
-                          resultOutput.style.color = 'gray';
+                          // If result is not yet "correct" or "incorrect", continue checking
+                          if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkResult, 500); // Check every 500ms
+                          } else {
+                            resultOutput.textContent = 'Last Question: Timeout';
+                            resultOutput.style.color = 'gray';
+                            log('Timeout waiting for result');
+                          }
+                          return;
                         }
                       } else {
-                        log('No result found');
-                        resultOutput.textContent = 'Last Question: No result found';
-                        resultOutput.style.color = 'gray';
+                        if (attempts < maxAttempts) {
+                          attempts++;
+                          setTimeout(checkResult, 500); // Check every 500ms
+                        } else {
+                          log('No result found after timeout');
+                          resultOutput.textContent = 'Last Question: No result found';
+                          resultOutput.style.color = 'gray';
+                        }
                       }
                     });
-                  }, 4000); // Adjust the delay as needed
+                  };
+
+                  checkResult(); // Start checking
                 }
               } else {
                 log(`Error: Could not determine valid answer number from AI response: "${responseText}"`);
