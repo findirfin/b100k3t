@@ -1,28 +1,28 @@
 let isSolving = false;
-let pplxToken = '';
+let geminiToken = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   const debugLog = document.getElementById('debugLog');
   const questionOutput = document.getElementById('questionOutput');
   const answersOutput = document.getElementById('answersOutput');
-  const tokenInput = document.getElementById('pplxToken');
+  const tokenInput = document.getElementById('geminiToken');
   const saveTokenBtn = document.getElementById('saveToken');
   const messageInput = document.getElementById('messageInput');
   const sendMessageBtn = document.getElementById('sendMessage');
   const chatMessages = document.getElementById('chatMessages');
 
   // Load saved token
-  chrome.storage.local.get(['pplxToken'], (result) => {
-    if (result.pplxToken) {
-      pplxToken = result.pplxToken;
-      tokenInput.value = pplxToken;
+  chrome.storage.local.get(['geminiToken'], (result) => {
+    if (result.geminiToken) {
+      geminiToken = result.geminiToken;
+      tokenInput.value = geminiToken;
     }
   });
 
   // Save token
   saveTokenBtn.addEventListener('click', () => {
-    pplxToken = tokenInput.value;
-    chrome.storage.local.set({ pplxToken });
+    geminiToken = tokenInput.value;
+    chrome.storage.local.set({ geminiToken });
     log('API token saved');
   });
 
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const message = messageInput.value.trim();
     if (!message) return;
 
-    if (!pplxToken) {
+    if (!geminiToken) {
       addMessageToChat('bot', 'Error: Please enter and save your API token first');
       return;
     }
@@ -46,28 +46,28 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.value = '';
 
     const requestBody = {
-      model: "sonar",
-      messages: [
+      contents: [
         {
-          role: "system",
-          content: "Be precise and concise."
-        },
-        {
-          role: "user",
-          content: message
+          parts: [
+            { text: message }
+          ]
         }
-      ]
+      ],
+      system_instruction: {
+        parts: [
+          { text: "Use Google Search to retrieve information if you don't know the answer." }
+        ]
+      },
+      tools: [ { google_search: {} } ],
     };
-
+    
     try {
       console.log('Sending request:', requestBody); // Debug log
 
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiToken}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${pplxToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
@@ -80,8 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       console.log('API Response:', data); // Debug log
 
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        addMessageToChat('bot', data.choices[0].message.content);
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        const responseText = data.candidates[0].content.parts[0].text;
+        addMessageToChat('bot', responseText);
       } else {
         throw new Error('Invalid response structure from API');
       }
