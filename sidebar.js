@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ],
       system_instruction: {
         parts: [
-          { text: "Use Google Search to retrieve information if you don't know the answer." }
+          { text: "Given a multiple-choice question, output only the number of the correct answer (e.g., 2) with no additional text; if you are unsure, use Google Search to verify your answer. Here is the question:" }
         ]
       },
       tools: [ { google_search: {} } ],
