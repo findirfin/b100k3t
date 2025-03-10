@@ -8,6 +8,9 @@
     "activeTab",
     "sidePanel"
   ],
+  "host_permissions": [
+    "*://*.blooket.com/*"
+  ],
   "action": {
     "default_title": "Open Solver Sidebar"
   },

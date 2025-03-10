@@ -38,8 +38,27 @@
     <button id="toggleSolve">Start Solving</button>
     
     <h3>Debug Tools</h3>
-    <button id="testKeypress">Test Keypress (1-4)</button>
+    <div style="display: flex; gap: 8px;">
+      <button id="press1">Press 1</button>
+      <button id="press2">Press 2</button>
+      <button id="press3">Press 3</button>
+      <button id="press4">Press 4</button>
+    </div>
+    <button id="testKeypress">Test All (1-4)</button>
     <textarea id="debugLog" readonly></textarea>
+    
+    <h3>Click Debug Tools</h3>
+    <div>
+      <label>Test coordinates:</label>
+      <input type="number" id="testX" placeholder="X coordinate" style="width: 100px">
+      <input type="number" id="testY" placeholder="Y coordinate" style="width: 100px">
+      <button id="testClick">Test Click</button>
+    </div>
+    <div>
+      <label>Element selector:</label>
+      <input type="text" id="elementSelector" placeholder="CSS selector">
+      <button id="findElement">Find Coordinates</button>
+    </div>
   </div>
   <script src="sidebar.js"></script>
 </body>
